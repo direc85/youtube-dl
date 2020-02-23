@@ -1,3 +1,5 @@
+## PLEASE SEE [README.md](https://github.com/direc85/youtube-dl/blob/master/_README.md) FOR DETAILS OF THIS FORK!
+
 [![Build Status](https://travis-ci.org/ytdl-org/youtube-dl.svg?branch=master)](https://travis-ci.org/ytdl-org/youtube-dl)
 
 youtube-dl - download videos from youtube.com or other video platforms
