@@ -426,6 +426,10 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                      (?(1).+)?                                                # if we found the ID, everything can follow
                      $""" % {'playlist_id': YoutubeBaseInfoExtractor._PLAYLIST_ID_RE}
     _NEXT_URL_RE = r'[\?&]next_url=([^&]+)'
+    _PLAYER_INFO_RE = (
+        r'/(?P<id>[a-zA-Z0-9_-]{8,})/player_ias\.vflset(?:/[a-zA-Z]{2,3}_[a-zA-Z]{2,3})?/base\.(?P<ext>[a-z]+)$',
+        r'\b(?P<id>vfl[a-zA-Z0-9_-]+)\b.*?\.(?P<ext>[a-z]+)$',
+    )
     _formats = {
         '5': {'ext': 'flv', 'width': 400, 'height': 240, 'acodec': 'mp3', 'abr': 64, 'vcodec': 'h263'},
         '6': {'ext': 'flv', 'width': 450, 'height': 270, 'acodec': 'mp3', 'abr': 64, 'vcodec': 'h263'},
@@ -569,7 +573,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'upload_date': '20120506',
                 'title': 'Icona Pop - I Love It (feat. Charli XCX) [OFFICIAL VIDEO]',
                 'alt_title': 'I Love It (feat. Charli XCX)',
-                'description': 'md5:f3ceb5ef83a08d95b9d146f973157cc8',
+                'description': 'md5:19a2f98d9032b9311e686ed039564f63',
                 'tags': ['Icona Pop i love it', 'sweden', 'pop music', 'big beat records', 'big beat', 'charli',
                          'xcx', 'charli xcx', 'girls', 'hbo', 'i love it', "i don't care", 'icona', 'pop',
                          'iconic ep', 'iconic', 'love', 'it'],
@@ -684,12 +688,11 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'id': 'nfWlot6h_JM',
                 'ext': 'm4a',
                 'title': 'Taylor Swift - Shake It Off',
-                'description': 'md5:bec2185232c05479482cb5a9b82719bf',
+                'description': 'md5:307195cd21ff7fa352270fe884570ef0',
                 'duration': 242,
                 'uploader': 'TaylorSwiftVEVO',
                 'uploader_id': 'TaylorSwiftVEVO',
                 'upload_date': '20140818',
-                'creator': 'Taylor Swift',
             },
             'params': {
                 'youtube_include_dash_manifest': True,
@@ -754,11 +757,11 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'upload_date': '20100430',
                 'uploader_id': 'deadmau5',
                 'uploader_url': r're:https?://(?:www\.)?youtube\.com/user/deadmau5',
-                'creator': 'deadmau5',
+                'creator': 'Dada Life, deadmau5',
                 'description': 'md5:12c56784b8032162bb936a5f76d55360',
                 'uploader': 'deadmau5',
                 'title': 'Deadmau5 - Some Chords (HD)',
-                'alt_title': 'Some Chords',
+                'alt_title': 'This Machine Kills Some Chords',
             },
             'expected_warnings': [
                 'DASH manifest missing',
@@ -1134,6 +1137,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'skip_download': True,
                 'youtube_include_dash_manifest': False,
             },
+            'skip': 'not actual anymore',
         },
         {
             # Youtube Music Auto-generated description
@@ -1144,8 +1148,8 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'title': 'Voyeur Girl',
                 'description': 'md5:7ae382a65843d6df2685993e90a8628f',
                 'upload_date': '20190312',
-                'uploader': 'Various Artists - Topic',
-                'uploader_id': 'UCVWKBi1ELZn0QX2CBLSkiyw',
+                'uploader': 'Stephen - Topic',
+                'uploader_id': 'UC-pWHpBjdGG69N9mM2auIAA',
                 'artist': 'Stephen',
                 'track': 'Voyeur Girl',
                 'album': 'it\'s too much love to know my dear',
@@ -1209,7 +1213,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 'id': '-hcAI0g-f5M',
                 'ext': 'mp4',
                 'title': 'Put It On Me',
-                'description': 'md5:93c55acc682ae7b0c668f2e34e1c069e',
+                'description': 'md5:f6422397c07c4c907c6638e1fee380a5',
                 'upload_date': '20180426',
                 'uploader': 'Matt Maeson - Topic',
                 'uploader_id': 'UCnEkIGqtGcQMLk73Kp-Q5LQ',
@@ -1273,14 +1277,18 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         """ Return a string representation of a signature """
         return '.'.join(compat_str(len(part)) for part in example_sig.split('.'))
 
-    def _extract_signature_function(self, video_id, player_url, example_sig):
-        id_m = re.match(
-            r'.*?-(?P<id>[a-zA-Z0-9_-]+)(?:/watch_as3|/html5player(?:-new)?|(?:/[a-z]{2,3}_[A-Z]{2})?/base)?\.(?P<ext>[a-z]+)$',
-            player_url)
-        if not id_m:
+    @classmethod
+    def _extract_player_info(cls, player_url):
+        for player_re in cls._PLAYER_INFO_RE:
+            id_m = re.search(player_re, player_url)
+            if id_m:
+                break
+        else:
             raise ExtractorError('Cannot identify player %r' % player_url)
-        player_type = id_m.group('ext')
-        player_id = id_m.group('id')
+        return id_m.group('ext'), id_m.group('id')
+
+    def _extract_signature_function(self, video_id, player_url, example_sig):
+        player_type, player_id = self._extract_player_info(player_url)
 
         # Read from filesystem cache
         func_id = '%s_%s_%s' % (
@@ -2009,22 +2017,10 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
 
                         if self._downloader.params.get('verbose'):
                             if player_url is None:
-                                player_version = 'unknown'
                                 player_desc = 'unknown'
                             else:
-                                if player_url.endswith('swf'):
-                                    player_version = self._search_regex(
-                                        r'-(.+?)(?:/watch_as3)?\.swf$', player_url,
-                                        'flash player', fatal=False)
-                                    player_desc = 'flash player %s' % player_version
-                                else:
-                                    player_version = self._search_regex(
-                                        [r'html5player-([^/]+?)(?:/html5player(?:-new)?)?\.js',
-                                         r'(?:www|player(?:_ias)?)-([^/]+)(?:/[a-z]{2,3}_[A-Z]{2})?/base\.js'],
-                                        player_url,
-                                        'html5 player', fatal=False)
-                                    player_desc = 'html5 player %s' % player_version
-
+                                player_type, player_version = self._extract_player_info(player_url)
+                                player_desc = '%s player %s' % ('flash' if player_type == 'swf' else 'html5', player_version)
                             parts_sizes = self._signature_cache_id(encrypted_sig)
                             self.to_screen('{%s} signature length %s, %s' %
                                            (format_id, parts_sizes, player_desc))
@@ -2473,20 +2469,23 @@ class YoutubePlaylistIE(YoutubePlaylistBaseInfoExtractor):
     _VIDEO_RE = _VIDEO_RE_TPL % r'(?P<id>[0-9A-Za-z_-]{11})'
     IE_NAME = 'youtube:playlist'
     _TESTS = [{
-        'url': 'https://www.youtube.com/playlist?list=PLwiyx1dc3P2JR9N8gQaQN_BCvlSlap7re',
+        'url': 'https://www.youtube.com/playlist?list=PL4lCao7KL_QFVb7Iudeipvc2BCavECqzc',
         'info_dict': {
-            'title': 'ytdl test PL',
-            'id': 'PLwiyx1dc3P2JR9N8gQaQN_BCvlSlap7re',
+            'uploader_id': 'UCmlqkdCBesrv2Lak1mF_MxA',
+            'uploader': 'Sergey M.',
+            'id': 'PL4lCao7KL_QFVb7Iudeipvc2BCavECqzc',
+            'title': 'youtube-dl public playlist',
         },
-        'playlist_count': 3,
+        'playlist_count': 1,
     }, {
-        'url': 'https://www.youtube.com/playlist?list=PLtPgu7CB4gbZDA7i_euNxn75ISqxwZPYx',
+        'url': 'https://www.youtube.com/playlist?list=PL4lCao7KL_QFodcLWhDpGCYnngnHtQ-Xf',
         'info_dict': {
-            'id': 'PLtPgu7CB4gbZDA7i_euNxn75ISqxwZPYx',
-            'title': 'YDL_Empty_List',
+            'uploader_id': 'UCmlqkdCBesrv2Lak1mF_MxA',
+            'uploader': 'Sergey M.',
+            'id': 'PL4lCao7KL_QFodcLWhDpGCYnngnHtQ-Xf',
+            'title': 'youtube-dl empty playlist',
         },
         'playlist_count': 0,
-        'skip': 'This playlist is private',
     }, {
         'note': 'Playlist with deleted videos (#651). As a bonus, the video #51 is also twice in this list.',
         'url': 'https://www.youtube.com/playlist?list=PLwP_SiAcdui0KVebT0mU9Apz359a4ubsC',
@@ -2496,7 +2495,7 @@ class YoutubePlaylistIE(YoutubePlaylistBaseInfoExtractor):
             'uploader': 'Christiaan008',
             'uploader_id': 'ChRiStIaAn008',
         },
-        'playlist_count': 95,
+        'playlist_count': 96,
     }, {
         'note': 'issue #673',
         'url': 'PLBB231211A4F62143',
