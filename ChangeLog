@@ -1,3 +1,70 @@
+version 2020.05.08
+
+Core
+* [downloader/http] Request last data block of exact remaining size
+* [downloader/http] Finish downloading once received data length matches
+  expected
+* [extractor/common] Use compat_cookiejar_Cookie for _set_cookie to always
+  ensure cookie name and value are bytestrings on python 2 (#23256, #24776)
++ [compat] Introduce compat_cookiejar_Cookie
+* [utils] Improve cookie files support
+    + Add support for UTF-8 in cookie files
+    * Skip malformed cookie file entries instead of crashing (invalid entry
+      length, invalid expires at)
+
+Extractors
+* [youtube] Improve signature cipher extraction (#25187, #25188)
+
+
+version 2020.05.03
+
+Core
++ [extractor/common] Extract multiple JSON-LD entries
+* [options] Clarify doc on --exec command (#19087, #24883)
+* [extractor/common] Skip malformed ISM manifest XMLs while extracting
+  ISM formats (#24667)
+
+Extractors
+* [youtube] Improve player id extraction
+* [youtube] Use redirected video id if any (#25063)
+* [youtube] Fix DRM videos detection (#24736)
+* [youtube] Skip broken multifeed videos (#24711)
+
+
+version 2020.03.24
+
+Core
+- [utils] Revert support for cookie files with spaces used instead of tabs
+
+Extractors
+
+
+version 2020.03.08
+
+Core
++ [utils] Add support for cookie files with spaces used instead of tabs
+
+Extractors
+- [youtube] Remove outdated code and unnecessary requests
+* [youtube] Improve extraction in 429 HTTP error conditions (#24283)
+
+
+version 2020.03.06
+
+Extractors
+* [youtube] Fix age-gated videos support without login (#24248)
+
+
+version 2020.03.01
+
+Core
+* [YoutubeDL] Force redirect URL to unicode on python 2
+- [options] Remove duplicate short option -v for --version (#24162)
+
+Extractors
+- Remove no longer needed compat_str around geturl
+
+
 version 2020.02.16
 
 Core
